@@ -60,8 +60,8 @@ Define the configuration parameters:
 | Variable | Description | Required | Default |
 |---|---|---|---|
 | `GEMINI_API_KEY` | Google Gemini API Key | **Yes** | None |
-| `SUPABASE_URL` | Supabase Postgres URL | No | SQLite fallback |
-| `SUPABASE_KEY` | Supabase API Service Key | No | SQLite fallback |
+| `SUPABASE_URL` | Supabase Postgres URL | Yes | SQLite fallback |
+| `SUPABASE_KEY` | Supabase API Service Key | Yes | SQLite fallback |
 
 ---
 
