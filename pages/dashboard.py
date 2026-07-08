@@ -477,14 +477,16 @@ def render_live_runner():
             install_btn = False
             
     if run_btn:
-        file_path = os.path.join(cloned_dir, selected_file)
         ext = selected_file.split(".")[-1].lower()
         if ext == "py":
-            cmd = [sys.executable, file_path]
+            cmd = [sys.executable, selected_file]
         elif ext == "js":
-            cmd = ["node", file_path]
+            cmd = ["node", selected_file]
         else:
-            cmd = [file_path]
+            if os.name != 'nt' and not selected_file.startswith(("./", "/")):
+                cmd = ["./" + selected_file]
+            else:
+                cmd = [selected_file]
             
         if args.strip():
             cmd.extend(args.strip().split())
