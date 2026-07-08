@@ -51,8 +51,11 @@ def parse_github_url(repo_url: str) -> str:
 
 def read_output_stream(process, q):
     try:
-        for line in iter(process.stdout.readline, ''):
-            q.put(line)
+        while True:
+            char = process.stdout.read(1)
+            if not char:
+                break
+            q.put(char)
     except Exception:
         pass
     finally:
@@ -416,9 +419,83 @@ def render_files_table():
                     del st.session_state['last_repo_name']
             st.rerun()
 
+def detect_run_command(cloned_dir: str) -> dict:
+    res = {
+        "file": "",
+        "command": "",
+        "needs_setup": False,
+        "setup_command": ""
+    }
+    if not os.path.exists(cloned_dir):
+        return res
+        
+    has_reqs = os.path.exists(os.path.join(cloned_dir, "requirements.txt"))
+    if has_reqs:
+        res["needs_setup"] = True
+        res["setup_command"] = "python -m pip install -r requirements.txt"
+        
+    # Scan files
+    files = []
+    for root, dirs, filenames in os.walk(cloned_dir):
+        for f in filenames:
+            ext = f.split(".")[-1].lower() if "." in f else ""
+            if ext in ["py", "js", "bat", "sh"]:
+                rel_path = os.path.relpath(os.path.join(root, f), cloned_dir)
+                files.append((rel_path, ext))
+                
+    if not files:
+        return res
+        
+    # Prioritize app.py, main.py, index.js, etc.
+    priority_files = ["app.py", "main.py", "index.js", "app.js", "main.js"]
+    selected_file = None
+    selected_ext = None
+    
+    for pf in priority_files:
+        for f, ext in files:
+            if f.lower() == pf or f.lower().endswith("/" + pf):
+                selected_file = f
+                selected_ext = ext
+                break
+        if selected_file:
+            break
+            
+    if not selected_file:
+        non_setup_files = [x for x in files if "setup" not in x[0].lower() and "install" not in x[0].lower()]
+        if non_setup_files:
+            selected_file, selected_ext = non_setup_files[0]
+        else:
+            selected_file, selected_ext = files[0]
+            
+    res["file"] = selected_file
+    
+    # Determine command
+    if selected_ext == "py":
+        file_abs = os.path.join(cloned_dir, selected_file)
+        is_streamlit = False
+        try:
+            with open(file_abs, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+                if "import streamlit" in content or "from streamlit" in content:
+                    is_streamlit = True
+        except Exception:
+            pass
+            
+        if is_streamlit:
+            res["command"] = f"python -m streamlit run {selected_file} --server.port 8501"
+        else:
+            res["command"] = f"python -u {selected_file}"
+    elif selected_ext == "js":
+        res["command"] = f"node {selected_file}"
+    else:
+        res["command"] = f"./{selected_file}" if os.name != "nt" else selected_file
+        
+    return res
+
 def render_live_runner():
     st.markdown("### ⚡ Live Runner")
     st.write("Execute runnable files (.py, .js, .bat, .sh) from the analyzed repository locally.")
+    
     last_exit = st.session_state.get("last_exit_code")
     if last_exit is not None:
         if last_exit == 0:
@@ -459,6 +536,66 @@ def render_live_runner():
         st.warning("No runnable files (.py, .js, .bat, .sh) found in the repository.")
         return
         
+    # Detect default commands for auto-setup/run
+    detected = detect_run_command(cloned_dir)
+    
+    st.markdown("#### 🤖 Automated Project Setup & Execution")
+    st.write("Let the system automatically setup and launch the repository for you.")
+    
+    cols_auto = st.columns([3, 1])
+    with cols_auto[0]:
+        st.markdown(f"**Detected Runner Target:** `{detected['file']}`")
+        if detected['needs_setup']:
+            st.markdown(f"**Setup Command:** `{detected['setup_command']}` ➔ **Run Command:** `{detected['command']}`")
+        else:
+            st.markdown(f"**Run Command:** `{detected['command']}`")
+            
+    running_process = st.session_state.get("running_process")
+    pending_commands = st.session_state.get("pending_commands", [])
+    
+    with cols_auto[1]:
+        auto_btn = st.button("🚀 Auto-Setup & Run", disabled=(running_process is not None), use_container_width=True)
+        
+    if auto_btn:
+        st.session_state["pending_commands"] = []
+        if detected['needs_setup']:
+            setup_cmd = detected['setup_command']
+            st.session_state["pending_commands"] = [detected['command']]
+            cmd_to_run = setup_cmd
+        else:
+            cmd_to_run = detected['command']
+            
+        cmd = shlex.split(cmd_to_run.strip())
+        if cmd:
+            if cmd[0] in ["python", "python3", "python.exe"]:
+                cmd[0] = sys.executable
+            elif cmd[0] == "streamlit":
+                cmd = [sys.executable, "-m", "streamlit"] + cmd[1:]
+                
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                errors="replace",
+                cwd=cloned_dir
+            )
+            q = queue.Queue()
+            t = threading.Thread(target=read_output_stream, args=(process, q))
+            t.daemon = True
+            t.start()
+            
+            st.session_state["running_process"] = process
+            st.session_state["process_queue"] = q
+            st.session_state["console_logs"] = [f"$ {cmd_to_run.strip()}\n"]
+            st.rerun()
+        except Exception as e:
+            st.error(f"Failed to auto-start process: {e}")
+            
+    st.markdown("---")
+    st.markdown("#### ⚙️ Manual Configuration")
+    
     selected_file = st.selectbox("Select File to Run", exec_files)
     
     # Check for empty/incomplete duckdb file
@@ -508,7 +645,6 @@ def render_live_runner():
     has_reqs = os.path.exists(os.path.join(cloned_dir, "requirements.txt"))
     
     col_actions = st.columns([1, 1, 2])
-    running_process = st.session_state.get("running_process")
     
     with col_actions[0]:
         run_btn = st.button("⚡ Run Code", disabled=(running_process is not None), use_container_width=True)
@@ -521,6 +657,7 @@ def render_live_runner():
             install_btn = False
             
     if run_btn:
+        st.session_state["pending_commands"] = []
         cmd = shlex.split(run_cmd_input.strip())
         if cmd:
             # Map python/streamlit to environment executable
@@ -551,6 +688,7 @@ def render_live_runner():
             st.error(f"Failed to start process: {e}")
             
     if install_btn:
+        st.session_state["pending_commands"] = []
         cmd = [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"]
         try:
             process = subprocess.Popen(
@@ -577,6 +715,7 @@ def render_live_runner():
         running_process.terminate()
         st.session_state["running_process"] = None
         st.session_state["process_queue"] = None
+        st.session_state["pending_commands"] = []
         st.session_state["last_exit_code"] = -1
         st.success("Process terminated by user.")
         st.rerun()
@@ -613,10 +752,51 @@ def render_live_runner():
                             break
                     log_placeholder.code("".join(logs), language="bash")
                 exit_code = running_process.returncode
-                st.session_state["running_process"] = None
-                st.session_state["process_queue"] = None
-                st.session_state["last_exit_code"] = exit_code
-                st.rerun()
+                
+                # Check for pending chained commands (like auto-setup transitioning to run)
+                pending = st.session_state.get("pending_commands", [])
+                if exit_code == 0 and pending:
+                    next_cmd_str = pending.pop(0)
+                    st.session_state["pending_commands"] = pending
+                    
+                    cmd = shlex.split(next_cmd_str.strip())
+                    if cmd:
+                        if cmd[0] in ["python", "python3", "python.exe"]:
+                            cmd[0] = sys.executable
+                        elif cmd[0] == "streamlit":
+                            cmd = [sys.executable, "-m", "streamlit"] + cmd[1:]
+                            
+                    try:
+                        next_process = subprocess.Popen(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                            errors="replace",
+                            cwd=cloned_dir
+                        )
+                        next_q = queue.Queue()
+                        next_t = threading.Thread(target=read_output_stream, args=(next_process, next_q))
+                        next_t.daemon = True
+                        next_t.start()
+                        
+                        st.session_state["running_process"] = next_process
+                        st.session_state["process_queue"] = next_q
+                        st.session_state["console_logs"].append(f"\n$ {next_cmd_str.strip()}\n")
+                        st.rerun()
+                    except Exception as e:
+                        st.session_state["running_process"] = None
+                        st.session_state["process_queue"] = None
+                        st.session_state["pending_commands"] = []
+                        st.session_state["last_exit_code"] = -1
+                        st.session_state["console_logs"].append(f"\nFailed to auto-start next command {next_cmd_str}: {e}\n")
+                        st.rerun()
+                else:
+                    st.session_state["running_process"] = None
+                    st.session_state["process_queue"] = None
+                    st.session_state["pending_commands"] = []
+                    st.session_state["last_exit_code"] = exit_code
+                    st.rerun()
 
 def render():
     inject_theme()
