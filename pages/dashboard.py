@@ -461,6 +461,20 @@ def render_live_runner():
         
     selected_file = st.selectbox("Select File to Run", exec_files)
     
+    # Check for empty/incomplete duckdb file
+    db_file_path = os.path.join(cloned_dir, "instacart.duckdb")
+    if os.path.exists(db_file_path):
+        size_mb = os.path.getsize(db_file_path) / (1024 * 1024)
+        if size_mb < 50:
+            st.warning(f"⚠️ **Empty/Incomplete Database Detected:** An empty database file `{db_file_path}` of size {size_mb:.2f} MB was found (probably created by running setup_db.py without CSV files). This will block `app.py` from automatically downloading the pre-built 1.2GB database from Google Drive.")
+            if st.button("🗑️ Delete Empty Database File"):
+                try:
+                    os.remove(db_file_path)
+                    st.success("✓ Deleted instacart.duckdb successfully! You can now run app.py to auto-download the database.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Failed to delete database: {e}")
+                    
     # Auto-generate default command based on selection
     default_cmd = ""
     if selected_file:
