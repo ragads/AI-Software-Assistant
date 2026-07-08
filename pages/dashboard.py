@@ -16,17 +16,11 @@ from services.database_service import (
     delete_file,
     get_file_content,
     insert_file_with_chunks,
-    wipe_all
+    wipe_all,
+    LANGUAGE_MAPPING
 )
 
 logger = logging.getLogger("pages_dashboard")
-
-LANGUAGE_MAPPING = {
-    "py": "python", "js": "javascript", "ts": "typescript", 
-    "tsx": "typescript", "md": "markdown", "txt": "text", 
-    "json": "json", "yaml": "yaml", "html": "html", "css": "css", 
-    "java": "java", "go": "go", "rs": "rust"
-}
 
 def parse_github_url(repo_url: str) -> str:
     url = repo_url.strip()
@@ -155,7 +149,8 @@ def ensure_readme_or_explanation():
         
     readme_id = None
     for f in files:
-        if f["filename"].lower() == "readme.md" or f["filename"].lower().endswith("/readme.md"):
+        fname = f["filename"].lower()
+        if fname in ["readme.md", "readme.txt", "readme.markdown", "readme"] or fname.endswith("/readme.md") or fname.endswith("/readme.txt") or fname.endswith("/readme.markdown") or fname.endswith("/readme"):
             readme_id = f["id"]
             break
             
@@ -236,6 +231,23 @@ def download_and_filter_repo(repo_url: str, branch: str) -> list:
             
             if any(p.startswith(".") for p in clean_name.split("/")) or "node_modules/" in clean_name or "venv/" in clean_name or "__pycache__/" in clean_name:
                 continue
+                
+            # Filter out non-text/binary files using extension whitelist
+            ext = clean_name.split(".")[-1].lower() if "." in clean_name else ""
+            allowed_exts = set(list(LANGUAGE_MAPPING.keys()) + ["yml", "toml", "sql", "sh", "bat", "ini", "cfg", "properties", "xml", "csv"])
+            base_name = clean_name.split("/")[-1].lower()
+            
+            is_allowed = ext in allowed_exts or base_name in ["dockerfile", "license", "procfile", "gemfile", "makefile"]
+            if not is_allowed:
+                continue
+                
+            # Skip files larger than 300KB to prevent indexing massive scripts/assets
+            try:
+                info = z.getinfo(name)
+                if info.file_size > 300 * 1024:
+                    continue
+            except Exception:
+                pass
                 
             try:
                 content = z.read(name)

@@ -7,6 +7,13 @@ from services.embedding_service import get_embedding
 
 logger = logging.getLogger("database_service")
 
+LANGUAGE_MAPPING = {
+    "py": "python", "js": "javascript", "ts": "typescript", 
+    "tsx": "typescript", "md": "markdown", "txt": "text", 
+    "json": "json", "yaml": "yaml", "html": "html", "css": "css", 
+    "java": "java", "go": "go", "rs": "rust"
+}
+
 # ── COUNTS ──────────────────────────────────────────────────────────
 def get_file_count() -> int:
     return sqlite_service.get_file_count()
@@ -138,7 +145,6 @@ def insert_file_with_chunks(file_info: Dict[str, Any]) -> bool:
         content = content.decode("utf-8", errors="ignore")
         
     ext = path.split(".")[-1].lower() if "." in path else ""
-    from pages.dashboard import LANGUAGE_MAPPING
     lang = LANGUAGE_MAPPING.get(ext, "text")
     
     if ext in ["md", "txt"]:
