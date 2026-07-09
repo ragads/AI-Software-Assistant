@@ -462,6 +462,22 @@ def detect_run_command(cloned_dir: str) -> dict:
             break
             
     if not selected_file:
+        # Check if any python file imports streamlit
+        streamlit_files = []
+        for f, ext in files:
+            if ext == "py":
+                file_abs = os.path.join(cloned_dir, f)
+                try:
+                    with open(file_abs, "r", encoding="utf-8", errors="ignore") as file_in:
+                        content = file_in.read()
+                        if "import streamlit" in content or "from streamlit" in content:
+                            streamlit_files.append((f, ext))
+                except Exception:
+                    pass
+        if streamlit_files:
+            selected_file, selected_ext = streamlit_files[0]
+            
+    if not selected_file:
         non_setup_files = [x for x in files if "setup" not in x[0].lower() and "install" not in x[0].lower()]
         if non_setup_files:
             selected_file, selected_ext = non_setup_files[0]
