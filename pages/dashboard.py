@@ -510,9 +510,49 @@ def detect_run_command(cloned_dir: str) -> dict:
         
     return res
 
+def get_cloudflared_binary():
+    import platform
+    system = platform.system().lower()
+    if system == "windows":
+        filename = "cloudflared.exe"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
+    elif system == "linux":
+        filename = "cloudflared"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+    elif system == "darwin":
+        filename = "cloudflared"
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64"
+    else:
+        return None, None
+        
+    binary_path = os.path.join(os.getcwd(), filename)
+    return binary_path, url
+
+def ensure_cloudflared():
+    binary_path, url = get_cloudflared_binary()
+    if not binary_path:
+        return None
+        
+    if not os.path.exists(binary_path):
+        import urllib.request
+        try:
+            # Download synchronously but let it be fast
+            urllib.request.urlretrieve(url, binary_path)
+            if os.name != 'nt':
+                os.chmod(binary_path, 0o755)
+        except Exception as e:
+            logging.error(f"Failed to download cloudflared: {e}")
+            return None
+    return binary_path
+
 def start_tunnel(port):
     stop_tunnel()
-    cmd = f"npx.cmd localtunnel --port {port}" if os.name == 'nt' else f"npx localtunnel --port {port}"
+    binary_path = ensure_cloudflared()
+    if not binary_path:
+        logging.error("Cloudflared binary not available.")
+        return
+        
+    cmd = f'"{binary_path}" tunnel --url http://localhost:{port}'
     try:
         process = subprocess.Popen(
             cmd,
@@ -526,8 +566,9 @@ def start_tunnel(port):
         def parse_url(proc):
             try:
                 for line in iter(proc.stdout.readline, ''):
-                    if "your url is:" in line:
-                        url = line.split("your url is:")[-1].strip()
+                    match = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
+                    if match:
+                        url = match.group(0)
                         st.session_state["tunnel_url"] = url
                         break
             except Exception:
@@ -537,7 +578,7 @@ def start_tunnel(port):
         t.daemon = True
         t.start()
     except Exception as e:
-        logging.error(f"Failed to start localtunnel: {e}")
+        logging.error(f"Failed to start Cloudflare tunnel: {e}")
 
 def stop_tunnel():
     proc = st.session_state.get("tunnel_process")
@@ -813,7 +854,7 @@ def render_live_runner():
         st.markdown("---")
         st.markdown("### 🟢 Live Interactive Interface")
         st.success(f"✓ Your application is running live at: {tunnel_url}")
-        st.info("💡 **Tip:** The first time you load the preview inside the frame below or click open, localtunnel might show a splash screen. Simply click **'Click to Continue'** to load your application.")
+        st.info("💡 **Tip:** Interact with your application directly using the embedded frame below, or click **Open in New Tab** to view it in full screen.")
         
         col_lt1, col_lt2 = st.columns([1.5, 3.5])
         with col_lt1:
