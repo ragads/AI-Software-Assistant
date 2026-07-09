@@ -483,13 +483,13 @@ def detect_run_command(cloned_dir: str) -> dict:
             pass
             
         if is_streamlit:
-            res["command"] = f"python -m streamlit run {selected_file} --server.port 8501"
+            res["command"] = f"python -m streamlit run \"{selected_file}\" --server.port 8501"
         else:
-            res["command"] = f"python -u {selected_file}"
+            res["command"] = f"python -u \"{selected_file}\""
     elif selected_ext == "js":
-        res["command"] = f"node {selected_file}"
+        res["command"] = f"node \"{selected_file}\""
     else:
-        res["command"] = f"./{selected_file}" if os.name != "nt" else selected_file
+        res["command"] = f"./\"{selected_file}\"" if os.name != "nt" else f"\"{selected_file}\""
         
     return res
 
@@ -630,13 +630,13 @@ def render_live_runner():
                 pass
                 
             if is_streamlit:
-                default_cmd = f"python -m streamlit run {selected_file} --server.port 8501"
+                default_cmd = f"python -m streamlit run \"{selected_file}\" --server.port 8501"
             else:
-                default_cmd = f"python -u {selected_file}"
+                default_cmd = f"python -u \"{selected_file}\""
         elif ext == "js":
-            default_cmd = f"node {selected_file}"
+            default_cmd = f"node \"{selected_file}\""
         else:
-            default_cmd = f"./{selected_file}" if os.name != "nt" else selected_file
+            default_cmd = f"./\"{selected_file}\"" if os.name != "nt" else f"\"{selected_file}\""
 
     run_cmd_input = st.text_input("Command to Execute", value=default_cmd)
     
