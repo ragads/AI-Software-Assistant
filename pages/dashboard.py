@@ -14,6 +14,7 @@ import time
 import sys
 import shlex
 import pandas as pd
+import re
 import google.genai as genai
 from google.genai import types
 from theme import inject_theme
@@ -509,6 +510,67 @@ def detect_run_command(cloned_dir: str) -> dict:
         
     return res
 
+def start_tunnel(port):
+    stop_tunnel()
+    cmd = f"npx localtunnel --port {port}"
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            shell=True
+        )
+        st.session_state["tunnel_process"] = process
+        
+        def parse_url(proc):
+            try:
+                for line in iter(proc.stdout.readline, ''):
+                    if "your url is:" in line:
+                        url = line.split("your url is:")[-1].strip()
+                        st.session_state["tunnel_url"] = url
+                        break
+            except Exception:
+                pass
+                
+        t = threading.Thread(target=parse_url, args=(process,))
+        t.daemon = True
+        t.start()
+    except Exception as e:
+        logging.error(f"Failed to start localtunnel: {e}")
+
+def stop_tunnel():
+    proc = st.session_state.get("tunnel_process")
+    if proc:
+        try:
+            if os.name == 'nt':
+                subprocess.run(f"taskkill /F /T /PID {proc.pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                import signal
+                try:
+                    os.kill(proc.pid, signal.SIGTERM)
+                except Exception:
+                    proc.terminate()
+        except Exception:
+            pass
+        st.session_state["tunnel_process"] = None
+    st.session_state["tunnel_url"] = None
+
+def check_and_start_tunnel(command_str):
+    port = None
+    port_match = re.search(r'(?:--port|-p|--server\.port)\s+(\d+)', command_str)
+    if port_match:
+        port = int(port_match.group(1))
+    else:
+        for p in ["8501", "3000", "5000", "8000", "8080"]:
+            if p in command_str:
+                port = int(p)
+                break
+    if "streamlit" in command_str.lower() and not port:
+        port = 8501
+    if port:
+        start_tunnel(port)
+
 def render_live_runner():
     st.markdown("### ⚡ Live Runner")
     st.write("Execute runnable files (.py, .js, .bat, .sh) from the analyzed repository locally.")
@@ -603,6 +665,9 @@ def render_live_runner():
             t.daemon = True
             t.start()
             
+            if not detected['needs_setup']:
+                check_and_start_tunnel(detected['command'])
+                
             st.session_state["running_process"] = process
             st.session_state["process_queue"] = q
             st.session_state["console_logs"] = [f"$ {cmd_to_run.strip()}\n"]
@@ -697,6 +762,8 @@ def render_live_runner():
             t.daemon = True
             t.start()
             
+            check_and_start_tunnel(run_cmd_input)
+            
             st.session_state["running_process"] = process
             st.session_state["process_queue"] = q
             st.session_state["console_logs"] = [f"$ {run_cmd_input.strip()}\n"]
@@ -729,6 +796,7 @@ def render_live_runner():
             st.error(f"Failed to start dependency installation: {e}")
             
     if terminate_btn and running_process:
+        stop_tunnel()
         running_process.terminate()
         st.session_state["running_process"] = None
         st.session_state["process_queue"] = None
@@ -740,6 +808,19 @@ def render_live_runner():
     q = st.session_state.get("process_queue")
     logs = st.session_state.get("console_logs", [])
     
+    tunnel_url = st.session_state.get("tunnel_url")
+    if tunnel_url:
+        st.markdown("---")
+        st.markdown("### 🟢 Live Interactive Interface")
+        st.success(f"✓ Your application is running live at: {tunnel_url}")
+        st.info("💡 **Tip:** The first time you load the preview inside the frame below or click open, localtunnel might show a splash screen. Simply click **'Click to Continue'** to load your application.")
+        
+        col_lt1, col_lt2 = st.columns([1.5, 3.5])
+        with col_lt1:
+            st.markdown(f'<a href="{tunnel_url}" target="_blank" style="text-decoration:none;"><button style="width:100%; height:45px; background-color:#00f0ff; color:#0e1117; font-weight:bold; border:none; border-radius:4px; cursor:pointer; font-family:\'Space Grotesk\', sans-serif;">🔗 Open in New Tab</button></a>', unsafe_allow_html=True)
+            
+        st.components.v1.iframe(tunnel_url, height=650, scrolling=True)
+
     if logs:
         st.markdown("**Console Output:**")
         log_placeholder = st.empty()
@@ -797,6 +878,8 @@ def render_live_runner():
                         next_t.daemon = True
                         next_t.start()
                         
+                        check_and_start_tunnel(next_cmd_str)
+                        
                         st.session_state["running_process"] = next_process
                         st.session_state["process_queue"] = next_q
                         st.session_state["console_logs"].append(f"\n$ {next_cmd_str.strip()}\n")
@@ -809,6 +892,7 @@ def render_live_runner():
                         st.session_state["console_logs"].append(f"\nFailed to auto-start next command {next_cmd_str}: {e}\n")
                         st.rerun()
                 else:
+                    stop_tunnel()
                     st.session_state["running_process"] = None
                     st.session_state["process_queue"] = None
                     st.session_state["pending_commands"] = []
