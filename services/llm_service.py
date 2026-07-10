@@ -36,7 +36,8 @@ def _gemini_generate(model, system, prompt, key):
 def _gemini_test(key):
     import google.genai as genai
 
-    list(genai.Client(api_key=key).models.list())
+    client = genai.Client(api_key=key)
+    list(client.models.list())
 
 
 def _anthropic_generate(model, system, prompt, key):
