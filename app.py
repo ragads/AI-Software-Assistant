@@ -5,7 +5,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 st.set_page_config(
-    page_title="DevPulse Architect",
+    page_title="RepoLens",
     page_icon="◈",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -39,7 +39,7 @@ from theme import inject_theme  # noqa: E402
 
 # Ensure defaults are only ever set once — session state, not clobbered every rerun.
 if "ui_theme" not in st.session_state:
-    st.session_state["ui_theme"] = "auto"
+    st.session_state["ui_theme"] = "light"
 st.session_state.setdefault("ui_theme_palette", "Nebula Glass")
 
 # Palette must be resolved before inject_theme() runs the stylesheet.
@@ -54,7 +54,7 @@ with st.container(key="app_header"):
             <div class="dp-logo-wrap" style="display: flex; align-items: center; gap: 12px; padding: 0;">
               <div class="dp-logo-mark" style="flex: 0 0 auto; line-height: 0;">
                 <svg width="34" height="34" viewBox="0 0 32 32" fill="none"
-                     xmlns="http://www.w3.org/2000/svg" aria-label="DevPulse Architect">
+                     xmlns="http://www.w3.org/2000/svg" aria-label="RepoLens">
                    <defs>
                      <linearGradient id="dpg" x1="4" y1="2" x2="28" y2="30"
                          gradientUnits="userSpaceOnUse">
@@ -68,7 +68,7 @@ with st.container(key="app_header"):
                          stroke-linecap="round" stroke-linejoin="round"/>
                  </svg>
               </div>
-              <div class="dp-logo-text" style="font-size: 1.4rem; font-weight: 700;">DevPulse Architect</div>
+              <div class="dp-logo-text" style="font-size: 1.4rem; font-weight: 700;">RepoLens</div>
             </div>""",
             unsafe_allow_html=True,
         )

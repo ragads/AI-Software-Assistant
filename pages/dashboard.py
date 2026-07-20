@@ -1,5 +1,5 @@
 # pages/dashboard.py
-"""UI sections for DevPulse Architect.
+"""UI sections for RepoLens.
 
 Contains GitHub ingestion, repository overview, and AI Codebase Chat.
 """

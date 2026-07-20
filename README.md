@@ -1,11 +1,11 @@
-# DevPulse Architect
+# RepoLens
 
 A Streamlit tool that pulls a public GitHub repository into a local index, scans every source file for security defects with static rules **and** an LLM, and exports a graded report as Markdown or PDF. It also renders a repo's static frontend and explains projects that ship without a README.
 
 There is no backend service and **no code from the analyzed repository is ever executed** — analysis is static and safe.
 
 <p align="center">
-  <img src="assets/guide/00_app.png" alt="DevPulse Architect dashboard" width="880">
+  <img src="assets/guide/00_app.png" alt="RepoLens dashboard" width="880">
 </p>
 
 ---

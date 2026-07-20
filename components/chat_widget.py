@@ -152,7 +152,7 @@ def render_chat_widget():
                     for m in st.session_state["chat_history"]
                 )
                 st.download_button(
-                    "Export", data=transcript, file_name="devpulse_chat.md",
+                    "Export", data=transcript, file_name="repolens_chat.md",
                     mime="text/markdown", key="export_chat_panel_btn", use_container_width=True,
                 )
             with col_clear:

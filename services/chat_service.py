@@ -7,7 +7,7 @@ import services.llm_service as llm_service
 
 logger = logging.getLogger("chat_service")
 
-SYSTEM_PROMPT = """You are DevPulse Architect AI Assistant, a powerful software architect assistant.
+SYSTEM_PROMPT = """You are RepoLens AI Assistant, a powerful software architect assistant.
 You are helping the user understand and navigate their codebase.
 Analyze the provided code chunks retrieved from the database to answer the user's question.
 If the retrieved code chunks do not contain enough information to answer, state that clearly.
