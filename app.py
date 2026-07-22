@@ -18,7 +18,7 @@ load_dotenv()
 # widget-keyed session value when its page isn't rendered; re-touching these
 # before the widgets are recreated preserves the theme and the ingest URL/branch
 # when switching sections.
-for _k in ("ui_theme", "ui_theme_palette", "ingest_url", "ingest_branch"):
+for _k in ("ui_theme", "ingest_url", "ingest_branch"):
     if _k in st.session_state:
         st.session_state[_k] = st.session_state[_k]
 
@@ -40,14 +40,13 @@ from theme import inject_theme  # noqa: E402
 # Ensure defaults are only ever set once — session state, not clobbered every rerun.
 if "ui_theme" not in st.session_state:
     st.session_state["ui_theme"] = "light"
-st.session_state.setdefault("ui_theme_palette", "Nebula Glass")
 
-# Palette must be resolved before inject_theme() runs the stylesheet.
-inject_theme(st.session_state["ui_theme"], st.session_state["ui_theme_palette"])
+# Theme is locked to the single Nebula Glass palette (see theme.py::PALETTES).
+inject_theme(st.session_state["ui_theme"], "Nebula Glass")
 
 # ── Unified Dashboard Header ───────────────────────────────────────────
 with st.container(key="app_header"):
-    col_logo, col_palette, col_mode, col_badge = st.columns([1.25, 0.55, 0.85, 0.35])
+    col_logo, col_mode, col_badge = st.columns([1.8, 0.85, 0.35])
     with col_logo:
         st.markdown(
             """
@@ -71,13 +70,6 @@ with st.container(key="app_header"):
               <div class="dp-logo-text" style="font-size: 1.4rem; font-weight: 700;">RepoLens</div>
             </div>""",
             unsafe_allow_html=True,
-        )
-    with col_palette:
-        st.selectbox(
-            "Palette",
-            options=list(theme.PALETTES.keys()),
-            key="ui_theme_palette",
-            label_visibility="collapsed",
         )
     with col_mode:
         st.segmented_control(

@@ -935,105 +935,6 @@ _FONTS = (
 
 
 PALETTES = {
-    "Indigo Modern": {
-        "light-accent": "#4F46E5", "light-accent-hover": "#4338CA", "light-accent-soft": "#EEF2FF",
-        "dark-accent": "#6366F1", "dark-accent-hover": "#818CF8", "dark-accent-soft": "rgba(99,102,241,0.14)",
-        "light-bg": "#F7F8FA", "dark-bg": "#0B0F1A",
-        "light-surface": "#FFFFFF", "dark-surface": "#131926",
-        "light-surface-2": "#F1F5F9", "dark-surface-2": "#1A2233",
-        "light-border": "#E2E8F0", "dark-border": "#232B3D",
-        "light-border-strong": "#CBD5E1", "dark-border-strong": "#33405A",
-    },
-    "Nordic Frost": {
-        "light-accent": "#0D9488", "light-accent-hover": "#0F766E", "light-accent-soft": "#F0FDFA",
-        "dark-accent": "#2DD4BF", "dark-accent-hover": "#5EEAD4", "dark-accent-soft": "rgba(45,212,191,0.14)",
-        "light-bg": "#F1F5F9", "dark-bg": "#0F172A",
-        "light-surface": "#FFFFFF", "dark-surface": "#1E293B",
-        "light-surface-2": "#E2E8F0", "dark-surface-2": "#334155",
-        "light-border": "#E2E8F0", "dark-border": "#1E293B",
-        "light-border-strong": "#CBD5E1", "dark-border-strong": "#475569",
-    },
-    "Cyberpunk Amber": {
-        "light-accent": "#D97706", "light-accent-hover": "#B45309", "light-accent-soft": "#FEF3C7",
-        "dark-accent": "#FBBF24", "dark-accent-hover": "#FCD34D", "dark-accent-soft": "rgba(251,191,36,0.14)",
-        "light-bg": "#FAF6F0", "dark-bg": "#0F0C08",
-        "light-surface": "#FFFFFF", "dark-surface": "#1A1612",
-        "light-surface-2": "#F5ECE1", "dark-surface-2": "#26201A",
-        "light-border": "#EBE2D5", "dark-border": "#2A231C",
-        "light-border-strong": "#D7C9B7", "dark-border-strong": "#3C3228",
-    },
-    "Dracula Crimson": {
-        "light-accent": "#E11D48", "light-accent-hover": "#BE123C", "light-accent-soft": "#FFF1F2",
-        "dark-accent": "#FB7185", "dark-accent-hover": "#FDA4AF", "dark-accent-soft": "rgba(244,63,94,0.14)",
-        "light-bg": "#FFF5F5", "dark-bg": "#180F11",
-        "light-surface": "#FFFFFF", "dark-surface": "#24181B",
-        "light-surface-2": "#FFE3E3", "dark-surface-2": "#342227",
-        "light-border": "#FFD2D2", "dark-border": "#3A282D",
-        "light-border-strong": "#FFA8A8", "dark-border-strong": "#52383F",
-    },
-    "Tokyo Night": {
-        "light-accent": "#7C3AED", "light-accent-hover": "#6D28D9", "light-accent-soft": "#F5F3FF",
-        "dark-accent": "#A78BFA", "dark-accent-hover": "#C084FC", "dark-accent-soft": "rgba(167,139,250,0.14)",
-        "light-bg": "#F5F6FA", "dark-bg": "#0D0E15",
-        "light-surface": "#FFFFFF", "dark-surface": "#161722",
-        "light-surface-2": "#EBEFF8", "dark-surface-2": "#212333",
-        "light-border": "#DFE4F2", "dark-border": "#2A2C40",
-        "light-border-strong": "#CCD4EC", "dark-border-strong": "#3F4260",
-    },
-    "Aurora Mint": {
-        "light-accent": "#0F766E", "light-accent-hover": "#0D9488", "light-accent-soft": "#F0FDFA",
-        "dark-accent": "#2DD4BF", "dark-accent-hover": "#14B8A6", "dark-accent-soft": "rgba(45,212,191,0.14)",
-        "light-bg": "#F8FAFC", "dark-bg": "#0A0E17",
-        "light-surface": "#FFFFFF", "dark-surface": "#111827",
-        "light-surface-2": "#F1F5F9", "dark-surface-2": "#1F2937",
-        "light-border": "#E2E8F0", "dark-border": "#1F2937",
-        "light-border-strong": "#CBD5E1", "dark-border-strong": "#374151",
-    },
-    "Obsidian Gold": {
-        "light-accent": "#D97706", "light-accent-hover": "#B45309", "light-accent-soft": "#FEF3C7",
-        "dark-accent": "#F59E0B", "dark-accent-hover": "#FBBF24", "dark-accent-soft": "rgba(245,158,11,0.14)",
-        "light-bg": "#FAF9F6", "dark-bg": "#080705",
-        "light-surface": "#FFFFFF", "dark-surface": "#12110F",
-        "light-surface-2": "#F5ECE1", "dark-surface-2": "#1E1C1A",
-        "light-border": "#EBE2D5", "dark-border": "#211F1D",
-        "light-border-strong": "#D7C9B7", "dark-border-strong": "#322E2A",
-    },
-    "Cyber Synth": {
-        "light-accent": "#D946EF", "light-accent-hover": "#C084FC", "light-accent-soft": "#FDF4FF",
-        "dark-accent": "#F472B6", "dark-accent-hover": "#FB7185", "dark-accent-soft": "rgba(244,114,182,0.14)",
-        "light-bg": "#FAF5FF", "dark-bg": "#0F0A1C",
-        "light-surface": "#FFFFFF", "dark-surface": "#160F29",
-        "light-surface-2": "#F3E8FF", "dark-surface-2": "#24183E",
-        "light-border": "#E9D5FF", "dark-border": "#2E1B4E",
-        "light-border-strong": "#D8B4FE", "dark-border-strong": "#442B6B",
-    },
-    "Oceanic Sapphire": {
-        "light-accent": "#1D4ED8", "light-accent-hover": "#1E40AF", "light-accent-soft": "#EFF6FF",
-        "dark-accent": "#38BDF8", "dark-accent-hover": "#60A5FA", "dark-accent-soft": "rgba(56,189,248,0.14)",
-        "light-bg": "#F0F4F8", "dark-bg": "#050B14",
-        "light-surface": "#FFFFFF", "dark-surface": "#0E1726",
-        "light-surface-2": "#E1E8F0", "dark-surface-2": "#172237",
-        "light-border": "#D0DBE5", "dark-border": "#1B2A4A",
-        "light-border-strong": "#B0C4DE", "dark-border-strong": "#2B3E6C",
-    },
-    "Aura Rose": {
-        "light-accent": "#BE123C", "light-accent-hover": "#9F1239", "light-accent-soft": "#FFF1F2",
-        "dark-accent": "#FB7185", "dark-accent-hover": "#FDA4AF", "dark-accent-soft": "rgba(251,113,133,0.14)",
-        "light-bg": "#FFF5F5", "dark-bg": "#140E0F",
-        "light-surface": "#FFFFFF", "dark-surface": "#1C1315",
-        "light-surface-2": "#FFE3E3", "dark-surface-2": "#281B1E",
-        "light-border": "#FFD2D2", "dark-border": "#352428",
-        "light-border-strong": "#FFA8A8", "dark-border-strong": "#4E353B",
-    },
-    "Steel Slate": {
-        "light-accent": "#475569", "light-accent-hover": "#334155", "light-accent-soft": "#F1F5F9",
-        "dark-accent": "#94A3B8", "dark-accent-hover": "#CBD5E1", "dark-accent-soft": "rgba(148,163,184,0.14)",
-        "light-bg": "#F8FAFC", "dark-bg": "#0F172A",
-        "light-surface": "#FFFFFF", "dark-surface": "#1E293B",
-        "light-surface-2": "#E2E8F0", "dark-surface-2": "#334155",
-        "light-border": "#E2E8F0", "dark-border": "#334155",
-        "light-border-strong": "#CBD5E1", "dark-border-strong": "#475569",
-    },
     "Nebula Glass": {
         "light-accent": "#9333EA", "light-accent-hover": "#7E22CE", "light-accent-soft": "rgba(147,51,234,0.12)",
         "dark-accent": "#F472B6", "dark-accent-hover": "#FB7185", "dark-accent-soft": "rgba(244,114,182,0.18)",
@@ -1063,12 +964,12 @@ def hex_to_rgb_str(hex_color: str) -> str:
         return f"{r},{g},{b}"
     return "99,102,241"
 
-def inject_theme(mode: str = "auto", palette_name: str = "Indigo Modern") -> None:
+def inject_theme(mode: str = "auto", palette_name: str = "Nebula Glass") -> None:
     """Inject the full stylesheet with dynamic palette tokens."""
     if mode not in ("auto", "light", "dark"):
         mode = "auto"
     if palette_name not in PALETTES:
-        palette_name = "Indigo Modern"
+        palette_name = "Nebula Glass"
         
     p = PALETTES[palette_name]
     

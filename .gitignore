@@ -6,7 +6,6 @@ __pycache__/
 .DS_Store
 scratch/
 *.png
-!assets/guide/*.png
 venv/
 cloned_runs/
 streamlit.log

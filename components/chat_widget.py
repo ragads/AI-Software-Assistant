@@ -4,7 +4,7 @@ import services.chat_service as chat_service
 
 def render_chat_widget():
     """Renders the AI Codebase Chat as a custom floating panel in the bottom-right corner."""
-    from pages.dashboard import parse_github_url
+    from services.github_service import parse_github_url
     from services.database_service import get_setting, get_file_count
 
     url = st.session_state.get("ingest_url", "").strip()
@@ -30,6 +30,8 @@ def render_chat_widget():
 
     if "chat_maximized" not in st.session_state:
         st.session_state["chat_maximized"] = False
+
+    st.session_state.setdefault("chat_pending_suggestion", None)
 
     # Sanitize chat history to only contain strings
     st.session_state["chat_history"] = [
@@ -113,9 +115,27 @@ def render_chat_widget():
                     "What languages are used in this codebase?",
                     "Can you summarize the main components?"
                 ]
+                pending_idx = st.session_state["chat_pending_suggestion"]
                 for idx, sug in enumerate(sugs):
-                    if st.button(sug, key=f"sug_btn_{idx}", use_container_width=True):
+                    if pending_idx == idx:
+                        # Only the clicked suggestion shows a loading state; the
+                        # others stay put (disabled below) instead of also spinning.
+                        with st.spinner(sug):
+                            try:
+                                response = chat_service.ask_question(sug)
+                                if not isinstance(response, str):
+                                    response = str(response)
+                            except Exception as e:
+                                response = f"Failed to get response: {e}"
                         st.session_state["chat_history"].append({"role": "user", "content": sug})
+                        st.session_state["chat_history"].append({"role": "assistant", "content": response})
+                        st.session_state["chat_pending_suggestion"] = None
+                        st.rerun()
+                    elif st.button(
+                        sug, key=f"sug_btn_{idx}", use_container_width=True,
+                        disabled=pending_idx is not None,
+                    ):
+                        st.session_state["chat_pending_suggestion"] = idx
                         st.rerun()
             else:
                 for msg in st.session_state["chat_history"]:
@@ -158,5 +178,6 @@ def render_chat_widget():
             with col_clear:
                 if st.button("Clear Chat", key="clear_chat_panel_btn", use_container_width=True):
                     st.session_state["chat_history"] = []
+                    st.session_state["chat_pending_suggestion"] = None
                     st.rerun()
 

@@ -9,8 +9,6 @@ import logging
 import os
 import posixpath
 import re
-import urllib.error
-import urllib.request
 import zipfile
 
 import streamlit as st
@@ -18,6 +16,11 @@ import streamlit as st
 from components.cards import empty_state, file_type_chip, metric_card, section_header
 from services import llm_service
 from services import chat_service
+from services.github_service import (
+    check_repo_private,
+    fetch_branch_zip_bytes,
+    parse_github_url,
+)
 from services.database_service import (
     LANGUAGE_MAPPING,
     delete_file,
@@ -41,55 +44,8 @@ logger = logging.getLogger("pages_dashboard")
 # ══════════════════════════════════════════════════════════════════════
 # GitHub Ingestion
 # ══════════════════════════════════════════════════════════════════════
-def parse_github_url(repo_url: str):
-    url = (repo_url or "").strip()
-    if not url:
-        return None
-    if url.endswith(".git"):
-        url = url[:-4]
-
-    if "git@github.com:" in url:
-        path = url.split("git@github.com:")[-1]
-    elif "github.com/" in url:
-        path = url.split("github.com/")[-1]
-    else:
-        path = url
-
-    parts = path.strip("/").split("/")
-    if len(parts) >= 2:
-        return f"{parts[0]}/{parts[1]}"
-    return None
-
-
-def check_repo_private(repo_url: str) -> bool:
-    repo_path = parse_github_url(repo_url)
-    if not repo_path:
-        return False
-
-    req = urllib.request.Request(
-        f"https://api.github.com/repos/{repo_path}",
-        headers={"User-Agent": "Mozilla/5.0"},
-    )
-    try:
-        import json as _json
-
-        with urllib.request.urlopen(req) as response:
-            return bool(_json.loads(response.read().decode()).get("private", False))
-    except urllib.error.HTTPError as e:
-        if e.code == 403:
-            if e.headers.get("X-RateLimit-Remaining") == "0":
-                return False
-            try:
-                if "rate limit" in e.read().decode("utf-8", errors="ignore").lower():
-                    return False
-            except Exception:
-                pass
-            return True
-        if e.code in (401, 404):
-            return True
-        return False
-    except Exception:
-        return False
+# parse_github_url / check_repo_private / fetch_branch_zip_bytes live in
+# services.github_service (pure helpers shared with ingestion).
 
 
 def download_and_filter_repo(repo_url: str, branch: str) -> list:
@@ -97,21 +53,7 @@ def download_and_filter_repo(repo_url: str, branch: str) -> list:
     if not repo_path:
         raise ValueError("Invalid GitHub URL. Use https://github.com/owner/repository")
 
-    def _fetch(ref):
-        req = urllib.request.Request(
-            f"https://github.com/{repo_path}/archive/refs/heads/{ref}.zip",
-            headers={"User-Agent": "Mozilla/5.0"},
-        )
-        with urllib.request.urlopen(req) as response:
-            return response.read()
-
-    try:
-        zip_data = _fetch(branch)
-    except Exception:
-        if branch == "main":
-            zip_data = _fetch("master")
-        else:
-            raise
+    zip_data = fetch_branch_zip_bytes(repo_path, branch)
 
     allowed_exts = set(LANGUAGE_MAPPING) | {
         "yml", "toml", "sql", "sh", "bat", "ini", "cfg", "properties", "xml", "csv",
@@ -156,18 +98,20 @@ def clone_and_index(repo_url: str, branch: str):
     if not parse_github_url(repo_url):
         st.error("Invalid GitHub URL. Use https://github.com/owner/repository")
         return
-    if check_repo_private(repo_url):
-        st.error("This repository is private, so it can't be accessed.")
-        return
 
     try:
-        progress = st.progress(0)
-        status = st.empty()
-        files = download_and_filter_repo(repo_url, branch)
+        with st.spinner(f"Loading repository {repo_url}…"):
+            if check_repo_private(repo_url):
+                st.error("This repository is private, so it can't be accessed.")
+                return
+            files = download_and_filter_repo(repo_url, branch)
+
         if not files:
             st.warning("No indexable text files found in that repository.")
-            progress.empty()
             return
+
+        progress = st.progress(0)
+        status = st.empty()
 
         # Wipe existing database rows and old state
         wipe_all()
@@ -298,6 +242,31 @@ def ensure_readme_or_explanation():
 # ══════════════════════════════════════════════════════════════════════
 # Dashboard Sections
 # ══════════════════════════════════════════════════════════════════════
+
+
+def render_app_overview():
+    """Static, technical explanation of RepoLens itself (not the ingested repo)."""
+    st.markdown(
+        """
+**Purpose** — RepoLens ingests a public GitHub repository (branch ZIP download,
+no `git clone`, nothing executed) and lets you browse and ask questions about
+its codebase through a local index and an LLM-powered chat assistant.
+
+**Architecture** — A single-page Streamlit app backed by a local SQLite file
+(`assistant.db`). Ingested files are chunked and stored, then optionally
+embedded (Gemini `gemini-embedding-001`) for semantic search — falling back to
+SQLite keyword search when no Gemini key is configured. Chat answers are
+generated by a pluggable LLM provider (Gemini, Anthropic, or OpenAI), selected
+via environment variables.
+
+**Key components**
+- `pages/dashboard.py` — ingestion, repository overview, KPIs, file browser
+- `components/chat_widget.py` — floating RAG chat panel
+- `services/llm_service.py` — multi-provider LLM interface
+- `services/chat_service.py` — retrieval + prompt assembly for Q&A
+- `services/sqlite_service.py` / `database_service.py` — storage and indexing
+        """
+    )
 
 
 def render_repo_details():
@@ -475,6 +444,9 @@ def render_recent_queries():
 # ══════════════════════════════════════════════════════════════════════
 def render_unified_dashboard():
     st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
+
+    with st.expander("◆  Project Overview", expanded=False):
+        render_app_overview()
 
     if "ingest_url" not in st.session_state:
         st.session_state["ingest_url"] = ""
